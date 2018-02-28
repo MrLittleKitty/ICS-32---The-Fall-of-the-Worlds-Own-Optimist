@@ -1,5 +1,5 @@
 # Eric Wolfe 76946154 eawolfe@uci.edu
-import game_state as game
+import columns_game as game
 
 
 def start_game() -> None:
@@ -18,27 +18,56 @@ def start_game() -> None:
             rowList.append(row)
         state.set_board_contents(rowList)
 
-    while not state.game_over():
+    while True:
         display_board(state)
         line = next_line()
         if line == 'Q':
             return
+        if line == '':
+            if state.tick():
+                break
+        else:
+            process_command(line, state)
     print('GAME OVER')
 
 
 def process_command(command: str, state: game.GameState) -> None:
-    if command == '':
-        state.tick()
-    elif command == 'R':
+    if command == 'R':
         state.rotate_faller()
     elif command == '<':
         state.move_faller(game.LEFT)
     elif command == '>':
         state.move_faller(game.RIGHT)
+    elif command[0] == 'F':
+        args = command.split(' ')
+        columnNumber = int(args[1])
+        faller = [args[4], args[3], args[2]]
+        state.spawn_faller(columnNumber, faller)
 
 
 def display_board(state: game.GameState) -> None:
-    return
+    for row in range(state.get_rows()):
+        rowString = "|"
+        for col in range(state.get_columns()):
+            cellValue = state.get_cell_contents(row, col)
+            cellState = state.get_cell_state(row, col)
+            if cellState == game.EMPTY_CELL:
+                rowString += '   '
+            elif cellState == game.OCCUPIED_CELL:
+                rowString += (' ' + cellValue + ' ')
+            elif cellState == game.FALLER_MOVING_CELL:
+                rowString += ('[' + cellValue + ']')
+            elif cellState == game.FALLER_STOPPED_CELL:
+                rowString += ('|' + cellValue + '|')
+            elif cellState == game.MATCHED_CELL:
+                rowString += ('*' + cellValue + '*')
+        rowString += '|'
+        print(rowString)
+    finalLine = ' '
+    for col in range(state.get_columns()):
+        finalLine += '---'
+    finalLine += ' '
+    print(finalLine)
 
 
 def get_int() -> int:
