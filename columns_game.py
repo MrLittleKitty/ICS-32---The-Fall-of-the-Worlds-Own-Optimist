@@ -89,7 +89,19 @@ class GameState:
         self._update_faller_state()
 
     def rotate_faller(self) -> None:
-        return
+        # Only works if there is an active faller
+        if not self.faller.active:
+            return
+
+        one = self.faller.contents[0]
+        two = self.faller.contents[1]
+        three = self.faller.contents[2]
+
+        self.faller.contents = [two, three, one]
+        for i in range(3):
+            self._set_cell(self.faller.get_row() - i, self.faller.get_col(), self.faller.contents[i],
+                           self.get_cell_state(self.faller.get_row() - i, self.faller.get_col()))
+        self._update_faller_state()
 
     def move_faller_side(self, direction: int) -> None:
         # Only works if there is an active faller
