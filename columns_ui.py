@@ -45,10 +45,13 @@ def process_command(command: str, state: game.GameState) -> None:
     elif command == '>':
         state.move_faller_side(game.RIGHT)
     elif command[0] == 'F':
-        args = command.split(' ')
-        columnNumber = int(args[1])
-        faller = [args[4], args[3], args[2]]
-        state.spawn_faller(columnNumber, faller)
+        try:
+            args = command.split(' ')
+            columnNumber = int(args[1])
+            faller = [args[4], args[3], args[2]]
+            state.spawn_faller(columnNumber, faller)
+        except:
+            return
 
 
 def display_board(state: game.GameState) -> None:

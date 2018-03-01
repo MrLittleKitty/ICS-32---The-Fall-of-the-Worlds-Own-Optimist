@@ -13,6 +13,7 @@ RIGHT = 1
 DOWN = 0
 
 # Contents of a cell
+_NONE = 'NONE'
 EMPTY = ' '
 S = 'S'
 T = 'Y'
@@ -65,6 +66,7 @@ class GameState:
                     self.faller.active = False
 
                     # The game ends if part of this faller was solidified above the top of the game board
+                    self._matching()
                     return value
 
             # If we get here then the faller isnt on solid ground for sure so move it down
@@ -100,8 +102,7 @@ class GameState:
 
         self.faller.contents = [two, three, one]
         for i in range(3):
-            self._set_cell(self.faller.get_row() - i, self.faller.get_col(), self.faller.contents[i],
-                           self.get_cell_state(self.faller.get_row() - i, self.faller.get_col()))
+            self._set_cell_contents(self.faller.get_row() - i, self.faller.get_col(), self.faller.contents[i])
         self._update_faller_state()
 
     def move_faller_side(self, direction: int) -> None:
@@ -158,7 +159,17 @@ class GameState:
         # Not allowed to set cells that fall above the board
         if row < 0:
             return
+        self._set_cell_contents(row, col, contents)
+        self._set_cell_state(row, col, state)
+
+    def _set_cell_contents(self, row: int, col: int, contents: str) -> None:
+        if row < 0:
+            return
         self.boardRows[row][col] = contents
+
+    def _set_cell_state(self, row: int, col: int, state: str) -> None:
+        if row < 0:
+            return
         self.boardStates[row][col] = state
 
     def _gem_gravity(self) -> None:
@@ -175,8 +186,47 @@ class GameState:
                         i += 1
 
     def _matching(self) -> None:
+        # First thing we do is get rid of any cells that are marked as matched from the previous tick
+        for row in range(self.get_rows()):
+            for col in range(self.get_columns()):
+                if self.get_cell_state(row, col) == MATCHED_CELL:
+                    self._set_cell(row, col, EMPTY, EMPTY_CELL)
+        # Then we propagate gravity so everything moves down again
         self._gem_gravity()
 
+        # Now we go through all the cells and flag all the matching ones
+        # We start at the bottom left corner and move up and to the right while always looking for matches up and right
+        #   so this way we never need to worry about looking in all directions. This is because any cell to the left
+        #   and down will already have been checked because we moved from that cell
+        matches = 0
+        gem = _NONE
+        # for currentCol in range(self.get_columns()):
+        for currentRow in range(self.get_rows() - 1, -1, -1):
+
+            # First thing we do is check along the X-axis (to the right)
+            matches = 0
+            gem = _NONE
+            for col in range(0, self.get_columns()):
+                if self.get_cell_contents(currentRow, col) == gem and self.get_cell_state(currentRow, col) == OCCUPIED_CELL:
+                    matches += 1
+                if self.get_cell_contents(currentRow, col) != gem or col == self.get_columns() - 1:
+                    if matches >= 3:
+                        if gem != EMPTY:
+                            if self.get_cell_contents(currentRow, col) != gem:
+                                self._mark_matched_cells(currentRow, col - 1, LEFT, matches)
+                            else:
+                                self._mark_matched_cells(currentRow, col, LEFT, matches)
+                    if self.get_cell_state(currentRow,col) == OCCUPIED_CELL:
+                        gem = self.get_cell_contents(currentRow, col)
+                        matches = 1
+                    else:
+                        gem = _NONE
+                        matches = 0
+
+    def _mark_matched_cells(self, row: int, col: int, direction: int, amount: int) -> None:
+        if direction == LEFT:
+            for targetCol in range(col, col - amount, -1):
+                self._set_cell_state(row, targetCol, MATCHED_CELL)
 
     def _update_faller_state(self) -> None:
 
