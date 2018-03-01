@@ -51,8 +51,23 @@ class GameState:
 
     def tick(self) -> bool:
         # Handle the faller first
+        if self.faller.active:
+            # If the faller had stopped last tick then check if it is still on solid ground
+            if self.faller.state == FALLER_STOPPED:
+                # If the faller is on solid ground then finalize it
+                if self._is_solid(self.faller.get_row() + 1, self.faller.get_col()):
+                    # If the top of the faller is out of bounds the game ends
+                    if self.faller.get_row() - 2 < 0:
+                        return True
+                    # If all of the faller is in play then we solidify it
+                    for i in range(3):
+                        self._set_cell(self.faller.get_row()-i,self.faller.get_col(),self.faller.contents[i],OCCUPIED_CELL)
+                    self.faller.active = False
+                else:
+                    self.faller.state = FALLER_MOVING
+            else: # Faller is still moving
 
-        # Freeze the faller if necessary
+
 
         # Match gems after that
         return False
@@ -63,9 +78,9 @@ class GameState:
 
         self.faller.active = True
         self.faller.contents = faller
-        self.faller.location = (0, column - 1)
-        self.boardRows[0][self.faller.location[1]] = self.faller.contents[0]
-        self.boardStates[0][self.faller.location[1]] = FALLER_MOVING_CELL
+        self.faller.set_row(0)
+        self.faller.set_col(column - 1)
+        self._set_cell(0, self.faller.get_col(), self.faller.contents[0], FALLER_MOVING_CELL)
 
     def rotate_faller(self) -> None:
         return
@@ -74,9 +89,12 @@ class GameState:
         if not self.faller.active:
             return
 
-        targetColumn = self.faller.location[1] + direction
+        if not direction == RIGHT and not direction == LEFT:
+            return
+
+        targetColumn = self.faller.get_col() + direction
         # Here we are going to check if we can move the faller
-        for row in range(self.faller.location[0], self.faller.location[0] - 2):
+        for row in range(self.faller.get_row(), self.faller.get_row() - 2):
             # If the check is going to check a row that is above the top, then we are clear to move the faller
             if row <= 0:
                 break
@@ -85,20 +103,52 @@ class GameState:
                 return
 
         # If we get to here then it is ok to move the faller
-        self.faller.location[1] = targetColumn
-        for row in range(self.faller.location[0], self.faller.location[0] - 2):
+        self.faller.set_col(targetColumn)
+        for row in range(self.faller.get_row(), self.faller.get_row() - 2):
             # If we are going to go out of bounds then we are done moving
             if row <= 0:
                 break
 
-    def _set_cell(self, row: int, col: int, contents: str) -> None:
+    def _set_cell(self, row: int, col: int, contents: str, state: str) -> None:
         self.boardRows[row][col] = contents
+        self.boardStates[row][col] = state
 
     def get_cell_state(self, row: int, col: int) -> str:
         return self.boardStates[row][col]
 
     def get_cell_contents(self, row: int, col: int) -> str:
         return self.boardRows[row][col]
+
+    def _is_solid(self, row: int, col: int) -> bool:
+        # If the target is below the bottom row than it is solid
+        if row >= self.get_columns():
+            return True
+
+        if self.get_cell_state(row, col) == OCCUPIED_CELL:
+            return True
+
+        return False
+
+    def _move_faller_down(self) -> None:
+        # If the faller cant move down then return
+        if self._is_solid(self.faller.get_row() + 1, self.faller.get_col()):
+            return
+
+        # Move the bottom of the faller down
+        self._move_cell(self.faller.get_row(), self.faller.get_col(), DOWN)
+        # If the middle of the faller is in play then move it down
+        if self.faller.get_row() - 1 >= 0:
+            self._move_cell(self.faller.get_row() - 1, self.faller.get_col(), DOWN)
+            # If the top of the faller is in play then move it down
+            if self.faller.get_row() - 2 >= 0:
+                self._move_cell(self.faller.get_row() - 2, self.faller.get_col(), DOWN)
+            else:  # If the top of the faller wasnt in play then we set its location to be where the middle was
+                self._set_cell(self.faller.get_row() - 1, self.faller.get_col(), self.faller.contents[2],
+                               FALLER_MOVING_CELL)
+        else:  # If the middle wasnt in play then spawn it where the fallers location was
+            self._set_cell(self.faller.get_row(), self.faller.get_col(), self.faller.contents[1], FALLER_MOVING_CELL)
+
+        self.faller.set_row(self.faller.get_row() + 1)
 
     def _move_cell(self, row: int, col: int, direction: int) -> None:
         oldValue = self.boardRows[row][col]
@@ -108,7 +158,7 @@ class GameState:
         self.boardStates[row][col] = EMPTY_CELL
 
         if direction == DOWN:
-            targetRow = row - 1
+            targetRow = row + 1
             self.boardRows[targetRow][col] = oldValue
             self.boardStates[targetRow][col] = oldState
         else:
@@ -124,6 +174,19 @@ FALLER_MOVING = 1
 class Faller:
     def __init__(self) -> None:
         self.active = False
-        self.location = [0, 0]  # Row, Column
+        self.row = 0
+        self.col = 0
         self.contents = [EMPTY, EMPTY, EMPTY]
         self.state = FALLER_MOVING
+
+    def get_row(self) -> int:
+        return self.row
+
+    def get_col(self) -> int:
+        return self.col
+
+    def set_row(self, row: int) -> None:
+        self.row = row
+
+    def set_col(self, col: int) -> None:
+        self.col = col
