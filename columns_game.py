@@ -72,7 +72,8 @@ class GameState:
             # Update the faller now so it is in the correct state
             self._update_faller_state()
 
-        # Match gems after that
+        # Handle matching and gem gravity
+        self._matching()
         return False
 
     def spawn_faller(self, column: int, faller: [str, str, str]) -> None:
@@ -159,6 +160,23 @@ class GameState:
             return
         self.boardRows[row][col] = contents
         self.boardStates[row][col] = state
+
+    def _gem_gravity(self) -> None:
+        for col in range(self.get_columns()):
+            for row in range(self.get_rows() - 1, -1, -1):
+                state = self.get_cell_state(row, col)
+                # Ignore the crawler when propagating gravity
+                if state == FALLER_MOVING_CELL or state == FALLER_STOPPED_CELL:
+                    continue
+                if state == OCCUPIED_CELL:
+                    i = 1
+                    while not self._is_solid(row + i, col):
+                        self._move_cell(row + i - 1, col, DOWN)
+                        i += 1
+
+    def _matching(self) -> None:
+        self._gem_gravity()
+
 
     def _update_faller_state(self) -> None:
 
