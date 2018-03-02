@@ -1,14 +1,17 @@
 # Eric Wolfe 76946154 eawolfe@uci.edu
 
 # State of a cell
-EMPTY_CELL = ' '
-FALLER_MOVING_CELL = '['
-FALLER_STOPPED_CELL = '|'
-OCCUPIED_CELL = 'X'
-MATCHED_CELL = '*'
+EMPTY_CELL = 'EMPTY STATE'
+FALLER_MOVING_CELL = 'FALLER_MOVING STATE'
+FALLER_STOPPED_CELL = 'FALLER_STOPPED STATE'
+OCCUPIED_CELL = 'OCCUPIED STATE'
+MATCHED_CELL = 'MATCHED STATE'
 
+
+# Helper method to tell if a cell is in a state that can be matched with other cells
 def _is_matchable_state(state: str) -> bool:
     return state == OCCUPIED_CELL or state == MATCHED_CELL
+
 
 # Directions
 LEFT = -1
@@ -46,7 +49,16 @@ class GameState:
             self.boardStates.append(stateRow)
 
     def set_board_contents(self, contents: [[str]]) -> None:
-        return
+        for row in range(self.get_rows()):
+            for col in range(self.get_columns()):
+                value = contents[row][col]
+                if value is EMPTY:
+                    self._set_cell(row, col, EMPTY, EMPTY_CELL)
+                else:
+                    self._set_cell(row, col, value, OCCUPIED_CELL)
+
+        self._gem_gravity()
+        self._matching()
 
     def tick(self) -> bool:
         # Handle the faller first

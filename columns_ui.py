@@ -3,25 +3,20 @@ import columns_game as game
 
 
 def start_game() -> None:
-    # rows = get_int()
-    # cols = get_int()
-    # state = game.GameState(rows, cols)
-    #
-    # line = next_line()
-    # if line == 'CONTENTS':
-    #     rowList = []
-    #     for i in range(rows):
-    #         row = []
-    #         line = next_line()
-    #         for index in range(cols):
-    #             row.append(line[i])
-    #         rowList.append(row)
-    #     state.set_board_contents(rowList)
-
-    # TODO----REMOVE THIS BECAUSE ITS FOR TESTING
-    rows = 8
-    cols = 8
+    rows = get_int()
+    cols = get_int()
     state = game.GameState(rows, cols)
+
+    line = next_line()
+    if line == 'CONTENTS':
+        rowList = []
+        for i in range(rows):
+            row = []
+            line = raw_next_line()
+            for index in range(cols):
+                row.append(line[index])
+            rowList.append(row)
+        state.set_board_contents(rowList)
 
     while True:
         display_board(state)
@@ -87,6 +82,9 @@ def get_int() -> int:
 def next_line() -> str:
     return input().strip()
 
+
+def raw_next_line() -> str:
+    return input()
 
 if __name__ == '__main__':
     start_game()
