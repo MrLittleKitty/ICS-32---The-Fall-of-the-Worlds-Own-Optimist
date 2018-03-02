@@ -19,8 +19,8 @@ def start_game() -> None:
     #     state.set_board_contents(rowList)
 
     # TODO----REMOVE THIS BECAUSE ITS FOR TESTING
-    rows = 4
-    cols = 3
+    rows = 8
+    cols = 8
     state = game.GameState(rows, cols)
 
     while True:

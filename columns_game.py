@@ -7,10 +7,14 @@ FALLER_STOPPED_CELL = '|'
 OCCUPIED_CELL = 'X'
 MATCHED_CELL = '*'
 
+def _is_matchable_state(state: str) -> bool:
+    return state == OCCUPIED_CELL or state == MATCHED_CELL
+
 # Directions
 LEFT = -1
 RIGHT = 1
 DOWN = 0
+DOWN_LEFT = 2
 
 # Contents of a cell
 _NONE = 'NONE'
@@ -198,35 +202,122 @@ class GameState:
         # We start at the bottom left corner and move up and to the right while always looking for matches up and right
         #   so this way we never need to worry about looking in all directions. This is because any cell to the left
         #   and down will already have been checked because we moved from that cell
-        matches = 0
-        gem = _NONE
-        # for currentCol in range(self.get_columns()):
-        for currentRow in range(self.get_rows() - 1, -1, -1):
+        self._match_x_axis()
+        self._match_y_axis()
+        self._match_diagonal()
 
-            # First thing we do is check along the X-axis (to the right)
+    def _match_x_axis(self) -> None:
+        for currentRow in range(self.get_rows() - 1, -1, -1):
             matches = 0
             gem = _NONE
             for col in range(0, self.get_columns()):
-                if self.get_cell_contents(currentRow, col) == gem and self.get_cell_state(currentRow, col) == OCCUPIED_CELL:
+                contents = self.get_cell_contents(currentRow, col)
+                state = self.get_cell_state(currentRow, col)
+                cellMatches = (contents == gem and _is_matchable_state(state))
+                # This cell matches our current sequence
+                if cellMatches:
                     matches += 1
-                if self.get_cell_contents(currentRow, col) != gem or col == self.get_columns() - 1:
+
+                # This is the last column so we have to terminate the matching for this row
+                if col == self.get_columns()-1:
                     if matches >= 3:
-                        if gem != EMPTY:
-                            if self.get_cell_contents(currentRow, col) != gem:
-                                self._mark_matched_cells(currentRow, col - 1, LEFT, matches)
-                            else:
-                                self._mark_matched_cells(currentRow, col, LEFT, matches)
-                    if self.get_cell_state(currentRow,col) == OCCUPIED_CELL:
-                        gem = self.get_cell_contents(currentRow, col)
+                        if cellMatches:
+                            self._mark_matched_cells(currentRow, col, LEFT, matches)
+                        else:
+                            self._mark_matched_cells(currentRow, col-1, LEFT, matches)
+                elif not cellMatches:
+                    if matches >= 3:
+                        self._mark_matched_cells(currentRow, col-1, LEFT, matches)
+
+                    if _is_matchable_state(state):
+                        gem = contents
                         matches = 1
                     else:
                         gem = _NONE
-                        matches = 0
+                        matches = 1
+
+    def _match_y_axis(self) -> None:
+        for currentCol in range(0, self.get_columns()):
+            matches = 0
+            gem = _NONE
+            for row in range(self.get_rows() - 1, -1, -1):
+                contents = self.get_cell_contents(row, currentCol)
+                state = self.get_cell_state(row, currentCol)
+                cellMatches = (contents == gem and _is_matchable_state(state))
+                # This cell matches our current sequence
+                if cellMatches:
+                    matches += 1
+
+                # This is the last column so we have to terminate the matching for this row
+                if row == 0:
+                    if matches >= 3:
+                        if cellMatches:
+                            self._mark_matched_cells(row, currentCol, DOWN, matches)
+                        else:
+                            self._mark_matched_cells(row+1, currentCol, DOWN, matches)
+                elif not cellMatches:
+                    if matches >= 3:
+                        self._mark_matched_cells(row+1, currentCol, DOWN, matches)
+
+                    if _is_matchable_state(state):
+                        gem = contents
+                        matches = 1
+                    else:
+                        gem = _NONE
+                        matches = 1
+
+    def _match_diagonal(self) -> None:
+        for currentRow in range(self.get_rows() - 1, -1, -1):
+            for currentCol in range(0, self.get_columns()):
+                matches = 0
+                gem = _NONE
+                rowCounter = 0
+                colCounter = 0
+                while True:
+                    row = currentRow-rowCounter
+                    col = currentCol+colCounter
+
+                    contents = self.get_cell_contents(row, col)
+                    state = self.get_cell_state(row, col)
+                    cellMatches = (contents == gem and _is_matchable_state(state))
+                    # This cell matches our current sequence
+                    if cellMatches:
+                        matches += 1
+
+                    # This is the last column so we have to terminate the matching for this row
+                    if col == self.get_columns()-1 or row == 0:
+                        if matches >= 3:
+                            if cellMatches:
+                                self._mark_matched_cells(row, col, DOWN_LEFT, matches)
+                            else:
+                                self._mark_matched_cells(row+1, col-1, DOWN_LEFT, matches)
+                    elif not cellMatches:
+                        if matches >= 3:
+                            self._mark_matched_cells(row+1, col-1, DOWN_LEFT, matches)
+
+                        if _is_matchable_state(state):
+                            gem = contents
+                            matches = 1
+                        else:
+                            gem = _NONE
+                            matches = 1
+
+                    rowCounter += 1
+                    colCounter += 1
+
+                    if currentRow-rowCounter < 0 or currentCol+colCounter >= self.get_columns():
+                        break
 
     def _mark_matched_cells(self, row: int, col: int, direction: int, amount: int) -> None:
         if direction == LEFT:
             for targetCol in range(col, col - amount, -1):
                 self._set_cell_state(row, targetCol, MATCHED_CELL)
+        elif direction == DOWN:
+            for targetRow in range(row, row + amount):
+                self._set_cell_state(targetRow, col, MATCHED_CELL)
+        elif direction == DOWN_LEFT:
+            for i in range(amount):
+                self._set_cell_state(row + i, col - i, MATCHED_CELL)
 
     def _update_faller_state(self) -> None:
 
