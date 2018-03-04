@@ -3,6 +3,9 @@ import columns_game as game
 
 
 def start_game() -> None:
+    """
+    The main entry point for the game. Starts the game.
+    """
     rows = get_int()
     cols = get_int()
     state = game.GameState(rows, cols)
@@ -19,20 +22,25 @@ def start_game() -> None:
         state.set_board_contents(rowList)
 
     while True:
-        display_board(state)
+        _display_board(state)
         line = next_line()
         if line == 'Q':
             return
         if line == '':
             if state.tick():
-                display_board(state)
+                _display_board(state)
                 break
         else:
-            process_command(line, state)
+            _process_command(line, state)
     print('GAME OVER')
 
 
-def process_command(command: str, state: game.GameState) -> None:
+def _process_command(command: str, state: game.GameState) -> None:
+    """
+    Processes a command that is read in from the console and then performs that action on the given GameState
+    :param command: The command that will be performed
+    :param state: The GameState that the given command will be performed on
+    """
     if command == 'R':
         state.rotate_faller()
     elif command == '<':
@@ -49,7 +57,11 @@ def process_command(command: str, state: game.GameState) -> None:
             return
 
 
-def display_board(state: game.GameState) -> None:
+def _display_board(state: game.GameState) -> None:
+    """
+    Displays the board of the given GameState in the console
+    :param state: The GameState that will be displayed in the console
+    """
     for row in range(state.get_rows()):
         rowString = "|"
         for col in range(state.get_columns()):
@@ -75,16 +87,30 @@ def display_board(state: game.GameState) -> None:
 
 
 def get_int() -> int:
+    """
+    Gets a lone integer from the console (the integer is on its own line)
+    :return: The int value that was read in from the console
+    """
     line = input().strip()
     return int(line)
 
 
 def next_line() -> str:
+    """
+    Gets a line from the console and returns it with the leading/trailing whitespace stripped
+    :return: The line that was retrieved from the console
+    """
     return input().strip()
 
 
 def raw_next_line() -> str:
+    """
+    Gets a completely raw line from the console
+    :return: The line that was retrieved from the console
+    """
     return input()
 
+
+# This makes it so this module is executable
 if __name__ == '__main__':
     start_game()
