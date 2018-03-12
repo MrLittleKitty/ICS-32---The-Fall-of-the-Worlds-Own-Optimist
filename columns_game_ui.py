@@ -5,17 +5,43 @@ import random
 
 _ROWS = 13
 _COLS = 6
-_FPS = 30
+_FPS = 12
 
-_JEWELS = ['S', 'Y', 'V', 'W', 'X', 'Y', 'Z']
+_JEWELS = ['S', 'T', 'V', 'W', 'X', 'Y', 'Z']
+
+
+def _get_jewel_color(jewel: str) -> (int, int, int):
+    if jewel == 'S':  # Red
+        return (255, 0, 0)
+    elif jewel == 'T':  # Green
+        return (0, 255, 0)
+    elif jewel == 'V':  # Blue
+        return (0, 0, 255)
+    elif jewel == 'W':  # Yellow
+        return (255, 255, 0)
+    elif jewel == 'X':  # Orange
+        return (255, 128, 0)
+    elif jewel == 'Y':  # Purple
+        return (102, 0, 204)
+    elif jewel == 'Z':  # Teal
+        return (51, 255, 255)
 
 
 class Game:
 
     def __init__(self):
         self._state = game.GameState(_ROWS, _COLS)
+
         self._tick_counter = _FPS
         self._running = True
+
+        self._backgroundColor = pygame.Color(0, 0, 0)
+        self._boxColor = pygame.Color(102, 51, 0)
+
+        # We use 0.05 as the buffer around the top and bottom for the jewels
+        self._jewelBufferY = 0.05
+        self._jewelSize = (1.0 - self._jewelBufferY) / self._state.get_rows()
+        self._jewelBufferX = (1.0 - (self._jewelSize * self._state.get_columns()))
 
     def start_game(self) -> None:
         pygame.init()
@@ -46,7 +72,7 @@ class Game:
 
         if not self._state.has_faller():
             contents = random.sample(_JEWELS, 3)
-            column = random.randint(1, _ROWS)
+            column = random.randint(1, _COLS)
             self._state.spawn_faller(column, contents)
 
     def _create_surface(self, size: (int, int)) -> None:
@@ -63,9 +89,6 @@ class Game:
             self._stop_running()
         elif event.type == pygame.VIDEORESIZE:
             self._create_surface(event.size)
-        elif event.type == pygame.KEYDOWN:
-            if event.key == pygame.K_RETURN:
-                self._bark()
 
     def _handle_keys(self) -> None:
         keys = pygame.key.get_pressed()
@@ -83,28 +106,58 @@ class Game:
         self._running = False
 
     def _draw_frame(self) -> None:
-        self._surface.fill(pygame.Color(255, 255, 255))
+        self._surface.fill(self._backgroundColor)
         self._draw_game()
         pygame.display.flip()
 
     def _draw_game(self) -> None:
-        tl_frac_x, tl_frac_y = self._state.player().top_left()
-        width_frac = self._state.player().width()
-        height_frac = self._state.player().height()
 
-        tl_pixel_x = self._frac_x_to_pixel_x(tl_frac_x)
-        tl_pixel_y = self._frac_y_to_pixel_y(tl_frac_y)
-        width_pixel = self._frac_x_to_pixel_x(width_frac)
-        height_pixel = self._frac_y_to_pixel_y(height_frac)
+        # buffer = 0.003
+        # topLeftX = self._frac_x_to_pixel_x((self._jewelBufferX / 2) - buffer)
+        # topLeftY = self._frac_y_to_pixel_y((self._jewelBufferY / 2) - buffer)
+        #
+        # width = self._frac_x_to_pixel_x((self._jewelSize * self._state.get_columns()) + (buffer * 2) - 0.002)
+        # height = self._frac_y_to_pixel_y((self._jewelSize * self._state.get_rows()) + buffer * 2 - 0.002)
 
-        player_rect = pygame.Rect(tl_pixel_x, tl_pixel_y, width_pixel, height_pixel)
+        topLeftX = self._frac_x_to_pixel_x((self._jewelBufferX / 2))
+        topLeftY = self._frac_y_to_pixel_y((self._jewelBufferY / 2))
 
-        #        pygame.draw.rect(self._surface, pygame.Color(0, 0, 128), player_rect)
+        width = self._frac_x_to_pixel_x((self._jewelSize * self._state.get_columns()) - 0.001)
+        height = self._frac_y_to_pixel_y((self._jewelSize * self._state.get_rows()))
 
-        self._surface.blit(
-            pygame.transform.scale(
-                self._player_image, (width_pixel, height_pixel)),
-            (tl_pixel_x, tl_pixel_y))
+        # Draw the outline box for the game
+        outlineRect = pygame.Rect(topLeftX, topLeftY, width, height)
+        pygame.draw.rect(self._surface, self._boxColor, outlineRect, 0)
+
+        # Draw each of the individual jewels
+        for row in range(self._state.get_rows()):
+            for col in range(self._state.get_columns()):
+                self._draw_jewel(row, col)
+
+    def _draw_jewel(self, row: int, col: int) -> None:
+        jewel = self._state.get_cell_contents(row, col)
+        if jewel is game.EMPTY:
+            return
+
+        rawColor = None
+        if self._state.get_cell_state(row, col) == game.MATCHED_CELL:
+            rawColor = (255, 255, 255)
+        else:
+            rawColor = _get_jewel_color(jewel)
+        color = pygame.Color(rawColor[0], rawColor[1], rawColor[2])
+
+        jewelX = (col * self._jewelSize) + (self._jewelBufferX / 2)
+        jewelY = (row * self._jewelSize) + (self._jewelBufferY / 2)
+
+        topLeftX = self._frac_x_to_pixel_x(jewelX)
+        topLeftY = self._frac_y_to_pixel_y(jewelY)
+
+        width = self._frac_x_to_pixel_x(self._jewelSize)
+        height = self._frac_y_to_pixel_y(self._jewelSize)
+
+        rect = pygame.Rect(topLeftX, topLeftY, width, height)
+
+        pygame.draw.rect(self._surface, color, rect, 0)
 
     def _frac_x_to_pixel_x(self, frac_x: float) -> int:
         return self._frac_to_pixel(frac_x, self._surface.get_width())
