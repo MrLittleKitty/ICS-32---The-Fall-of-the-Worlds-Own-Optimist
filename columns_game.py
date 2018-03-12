@@ -130,6 +130,13 @@ class GameState:
         # Check if the ground immediately under the faller is solid and if it is then update the fallers state
         self._update_faller_state()
 
+    def has_faller(self) -> bool:
+        """
+        Returns whether or not this game state has a faller that is currently active (falling or stopped but not frozen)
+        :return: True if there is an active faller on the game board. False otherwise
+        """
+        return self._faller.active
+
     def rotate_faller(self) -> None:
         """
         Rotates the faller so the first block becomes the last, the middle becomes the first, and the top becomes the middle
