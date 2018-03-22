@@ -1,5 +1,3 @@
-# Eric Wolfe 76946154 eawolfe@uci.edu
-
 # State of a cell
 EMPTY_CELL = 'EMPTY STATE'
 FALLER_MOVING_CELL = 'FALLER_MOVING STATE'

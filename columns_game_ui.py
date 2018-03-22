@@ -1,4 +1,3 @@
-# Eric Wolfe 76946154 eawolfe@uci.edu
 import columns_game as game
 import pygame
 import random
