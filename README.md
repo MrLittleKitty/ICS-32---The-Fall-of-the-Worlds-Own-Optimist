@@ -27,6 +27,17 @@ Project 4:
     Total Score:    28.8
 Project 5:
 
+    Correctness and Robustness (20 points)
+    
+    -2      The game board shows no cells (the grid is not visible).
+    
+    Your Score:     18
+    -----------------------
+    Quality and Design (10 points)
+    
+    Your Score:     10
+    -----------------------
+    Total Score:    28
 # Licensing
 
 All of the code in this repository was created by me (Eric Wolfe) during my fourth year of college. 
